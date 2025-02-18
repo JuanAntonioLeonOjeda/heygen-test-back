@@ -1,41 +1,48 @@
-require("dotenv").config()
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
+const express = require("express")
+const cors = require("cors")
+const axios = require("axios")
+const dotenv = require("dotenv")
 
-const faq = require("./faq");
+dotenv.config()
 
-const app = express();
-app.use(cors());
+const app = express()
+app.use(cors())
+app.use(express.json())
 
-app.get("/video", async (req, res) => {
-  const { query } = req.query;
+const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
+const CLAUDE_MODEL = "claude-3-haiku" // Other options: claude-3-sonnet / claude-3-haiku / opus-20240229
 
-  const answer = faq[query];
-
-  if (!answer) {
-    return res.status(200).json({ message: "No related topics" });
-  }
-
+app.post("/claude", async (req, res) => {
   try {
-    const statusResponse = await axios.get(
-      `https://api.heygen.com/v1/video_status.get?video_id=${answer?.id}`,
+    const userMessage = req.body.question
+
+    const query = `I'm going to do some query stuff with this ${userMessage}`
+
+    const response = await axios.post(
+      "https://api.anthropic.com/v1/messages",
       {
-        headers: { "X-Api-Key": process.env.API_KEY },
+        model: CLAUDE_MODEL,
+        messages: [{ role: "user", content: query }],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": CLAUDE_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
       }
-    );
-
-    if (statusResponse.data.data.status !== "completed") {
-      return res
-        .status(202)
-        .json({ message: "Video is still processing, try again later." });
-    }
-
-    res.json(statusResponse.data.data); // Send the video data back to Vue
+    )
+    console.log(response.data.content[0].text);
+    res.json({ answer: response.data.content[0].text })
   } catch (error) {
-    console.error("Error fetching video:", error);
-    res.status(500).json({ error: "Failed to fetch video" });
+    console.error(
+      "Claude API Error:",
+      error.response ? error.response.data : error.message
+    )
+    res.status(500).json({ error: "Failed to communicate with Claude." })
   }
-});
+})
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+app.listen(3000, () =>
+  console.log("✅ Server running on http://localhost:3000")
+)
