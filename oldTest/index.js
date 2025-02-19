@@ -1,14 +1,19 @@
-require("dotenv").config()
 const express = require("express")
 const cors = require("cors")
+const axios = require("axios")
+const dotenv = require("dotenv")
+dotenv.config()
 
-const askClaude = require("./claude")
+const askClaude = require('./claude')
+const {
+  createAvatarSession
+} = require('./heygen')
 
 const app = express()
-app
-  .use(cors())
-  .use(express.json())
+app.use(cors())
+app.use(express.json())
 
+app
   .post("/claude", async (req, res) => {
     try {
       const input = req.body.question
@@ -23,6 +28,16 @@ app
       res.status(500).json({ error: "Failed to communicate with Claude." })
     }
   })
+  .get('/session', async (req,res) => {
+    try {
+      const answer = await createAvatarSession()
+      res.status(200).json(answer)
+    } catch (error) {
+      res.status(500).send(error)
+    }
+  } )
+
+
 
 app.listen(3000, () =>
   console.log("✅ Server running on http://localhost:3000")
