@@ -6,7 +6,7 @@ dotenv.config()
 
 const askClaude = require('./claude')
 const {
-  startAvatarSession
+  createAvatarSession
 } = require('./heygen')
 
 const app = express()
@@ -30,7 +30,7 @@ app
   })
   .get('/session', async (req,res) => {
     try {
-      const answer = await startAvatarSession()
+      const answer = await createAvatarSession()
       res.status(200).json(answer)
     } catch (error) {
       res.status(500).send(error)
